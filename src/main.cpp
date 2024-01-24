@@ -1,3 +1,9 @@
+
+/*
+Stand: 20.01.2024
+
+*/
+
 #include <Arduino.h>
 
 #include <espnow.h>
@@ -61,6 +67,8 @@ unsigned long mesh_millis_offset = 0; // the offset from this node and the oldes
 unsigned long node_millis_offset = 0;
 unsigned long received_millis = 0; // value for saving received time from other nodes
 
+unsigned long last_send_interval_change = 0; 
+
 unsigned long oldest_node_id = 0;
 
 unsigned long last_millis_send = 0;
@@ -69,7 +77,7 @@ unsigned long send_interval = 1000;
 
 bool blinker_state = 0;
 bool new_blinker_state = 0;
-int blink_interval = 666; // 1,5 Hz => T= 666 ms
+int blink_interval = 645; // 1,55 Hz => T= 645 ms
 
 int broadcast_counter = 1;
 
@@ -107,7 +115,6 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     if(timeDataIncoming.node_id == oldest_node_id)
     {
       // re-sync with oldest node to account for drift. 
-      oldest_node_id = timeDataIncoming.node_id;
       mesh_millis_offset = received_millis - node_current_millis + 10; // add 10ms to account for send_time
       mesh_millis = node_current_millis + mesh_millis_offset;
     }
@@ -115,7 +122,7 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     // if we receive millis from a node that is larger than our current mesh-millis, 
     // sync to the oldest node. 
     // mesh millis should always try to be as close as possible to the millis of the oldest node. 
-    if (received_millis > (mesh_millis - 20))
+    else if (received_millis > (mesh_millis - 20))
     {
       oldest_node_id = timeDataIncoming.node_id;
       mesh_millis_offset = received_millis - node_current_millis + 10; // add 10ms to account for send_time
@@ -123,6 +130,7 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
 
       send_interval = random(2000, 4000); // reduce send interval as we are not the oldest node.
       post_init = 1;                      // set post_init to 1 as we are not the oldest node.
+
     }
   }
   else
@@ -138,7 +146,11 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     {
       mesh_millis_offset = 0;
       oldest_node_id = 0;
+      send_interval = random(750, 1250); // increase send interval as we are the oldest node. 
+
     }
+
+
   }
 
   Serial.print("\nreceived_millis: ");
@@ -204,10 +216,12 @@ void loop()
   node_current_millis = millis();
   mesh_millis = node_current_millis + mesh_millis_offset;
 
+
   if (post_init == false && node_current_millis >= 60000)
   {
     post_init = true;
     send_interval = random(2000, 4000);
+    // reduce send rate after init
   }
 
   if (node_current_millis - last_millis_send >= send_interval)
