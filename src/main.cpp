@@ -1,5 +1,4 @@
 #include <Arduino.h>
-
 #include <espnow.h>
 #include <ESP8266WiFi.h>
 
@@ -11,11 +10,10 @@ typedef struct time_struct
   unsigned long time_millis;
 } time_struct;
 
-time_struct timeDataOutgoing; // Daten welche gesendet werden
-time_struct timeDataIncoming; // Empfangene Daten
+time_struct timeDataOutgoing; // Data to be sent
+time_struct timeDataIncoming; // Data the will be received
 
-// first byte X2 since we can consider it to be a local MAC
-// last
+// First byte x2 since we can consider it to be a local MAC
 // 0x52=R
 // 0x57=W
 // 0x73=s
@@ -55,6 +53,14 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
   // if received milllis is bigger than our own millis
   if (timeDataIncoming.time_millis > node_current_millis)
   {
+
+    // If it just so happens that the sending node has the same node id, randomly generate a new one.
+    // By putting this code here, we guarantee, that the older node will not change their node_id.
+    if (timeDataIncoming.node_id == timeDataOutgoing.node_id)
+    {
+      timeDataOutgoing.node_id = random(2000000, 24000000);
+    }
+
     // if bigger millis are sent from oldest node
     if (timeDataIncoming.node_id == oldest_node_id)
     {
@@ -97,14 +103,11 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       mesh_millis_offset = 0;
       oldest_node_id = 0;
       master_node = true;
-
-      // increase send rate as we are the oldest node.
-      send_interval = random(750, 1250);
     }
 
     // if we receive millis that are from a new node that is alive less than 2 seconds
     // check if we are the master node and send our timestamp one time to update the new node.
-    if (timeDataIncoming.time_millis < 2000)
+    if (timeDataIncoming.time_millis < 5000)
     {
       if (master_node || single_node)
       {
@@ -196,8 +199,8 @@ void loop()
     {
       if (single_node)
       {
-        // if we are the only node after 60 seconds, low send rate
-        send_interval = random(8000, 12000);
+        // if we are the only node after 60 seconds, very low send rate
+        send_interval = random(60000, 90000);
       }
       else if (master_node)
       {
@@ -206,8 +209,8 @@ void loop()
       }
       else
       {
-        // we are not the only and not the oldest node, low send rate
-        send_interval = random(8000, 12000);
+        // we are not the only and not the oldest node, very low send rate
+        send_interval = random(60000, 90000);
       }
     }
     else
@@ -225,8 +228,8 @@ void loop()
       }
       else
       {
-        // we are not oldest and not the only within the 60 seconds, low send rate
-        send_interval = random(8000, 12000);
+        // we are not the oldest and not the only node within the 60 seconds, very low send rate
+        send_interval = random(60000, 90000);
       }
     }
   }
