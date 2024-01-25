@@ -12,7 +12,7 @@ This project enables the synchronization of vehicle turn signals using ESP8266 a
 
 ## Circuit Diagram
 
-TODO: The circuit diagram for the setup is available in the `Circuit_Diagram.pdf` document. It outlines the basic connections and components for the project.
+The circuit diagram for the setup is available in the `Circuit_Diagram.pdf` document. It outlines the basic connections and components for the project.
 
 
 ## License
