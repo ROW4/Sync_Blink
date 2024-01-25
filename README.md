@@ -1,6 +1,6 @@
 # Vehicle turn signal synchronization with ESP8266 and ESP-NOW
 
-This project enables the synchronization of vehicle turn signals using ESP8266 and ESP-NOW. By leveraging these technologies, wireless communication between vehicles can be established, ensuring synchronized blinkers.
+This project enables the synchronization of vehicle turn signals using ESP8266 and ESP-NOW. By leveraging these technologies, wireless communication between vehicles can be established, ensuring synchronized turn signals.
 
 ## Features
 
@@ -8,7 +8,7 @@ This project enables the synchronization of vehicle turn signals using ESP8266 a
 
 - **ESP-NOW Protocol:** ESP-NOW is employed to facilitate efficient point-to-point communication between ESP8266 modules.
 
-- **Blinker Synchronization:** The program allows for the synchronization of blinkers on different vehicles.
+- **Turn Signal Synchronization:** The program allows for the synchronization of turn signals on different vehicles.
 
 ## Circuit Diagram
 
