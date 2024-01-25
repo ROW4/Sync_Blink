@@ -2,6 +2,8 @@
 
 This project enables the synchronization of vehicle turn signals using ESP8266 and ESP-NOW. By leveraging these technologies, wireless communication between vehicles can be established, ensuring synchronized turn signals.
 
+Inspired by: [Why it's not possible to synchronize turn signals (but also absolutely is)](https://www.youtube.com/watch?v=2z5A-COlDPk) 
+
 ## Features
 
 - **ESP8266-based:** The ESP8266 (ESP-01) platform is utilized to enable wireless communication.
