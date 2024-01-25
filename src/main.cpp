@@ -91,9 +91,9 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
   }
   else
   {
-    // this is executed, if the received millis are less than our own millis.
-    // check if the timestamp comes from our previous oldest node
-    // if the timestamp comes from the previous oldest node,
+    // This is executed, if the received millis are less than our own millis.
+    // Check if the timestamp comes from our previous oldest node
+    // If the timestamp comes from the previous oldest node,
     // the previous node must have been rebooted.
     // We reset the mesh_millis_offset and oldest_node_id
     // and assume the we are the oldest node until we notice an older node.
@@ -105,7 +105,7 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       master_node = true;
     }
 
-    // if we receive millis that are from a new node that is alive less than 2 seconds
+    // if we receive millis that are from a new node that is alive less than 5 seconds
     // check if we are the master node and send our timestamp one time to update the new node.
     if (timeDataIncoming.time_millis < 5000)
     {
@@ -117,7 +117,8 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     }
   }
 
-  // we are not the only node
+  // In any case, if we receive any data, 
+  // we are not the only node. 
   single_node = false;
 
   // Serial.print("\nreceived_node-id: ");
