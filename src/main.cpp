@@ -103,6 +103,9 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       mesh_millis_offset = 0;
       oldest_node_id = 0;
       master_node = true;
+
+      // set send_interval to 0 to send timestamp one single time instantly
+      send_interval = 0;
     }
 
     // if we receive millis that are from a new node that is alive less than 5 seconds
@@ -117,8 +120,8 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     }
   }
 
-  // In any case, if we receive any data, 
-  // we are not the only node. 
+  // In any case, if we receive any data,
+  // we are not the only node.
   single_node = false;
 
   // Serial.print("\nreceived_node-id: ");
