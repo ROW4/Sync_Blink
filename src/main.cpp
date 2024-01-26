@@ -54,11 +54,11 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
   if (timeDataIncoming.time_millis > node_current_millis)
   {
 
-    // If it just so happens that the sending node has the same node id, randomly generate a new one.
+    // If it just so happens that the sending node has the same node id, increase our node_id.
     // By putting this code here, we guarantee, that the older node will not change their node_id.
     if (timeDataIncoming.node_id == timeDataOutgoing.node_id)
     {
-      timeDataOutgoing.node_id = random(2000000, 24000000);
+      timeDataOutgoing.node_id = timeDataOutgoing.node_id + 1;
     }
 
     // if bigger millis are sent from oldest node
@@ -104,7 +104,7 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       oldest_node_id = 0;
       master_node = true;
 
-      // set send_interval to 0 to send timestamp one single time instantly
+      // Set send_interval to 0 to send timestamp one single time instantly.
       send_interval = 0;
     }
 
