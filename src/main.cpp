@@ -65,8 +65,8 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     if (timeDataIncoming.node_id == oldest_node_id)
     {
       // re-sync with oldest node to account for drift.
-      // Add 10ms to account for send time.
-      mesh_millis_offset = timeDataIncoming.time_millis - node_current_millis + 10;
+      // Add 3ms to account for send time.
+      mesh_millis_offset = timeDataIncoming.time_millis - node_current_millis + 3;
       mesh_millis = node_current_millis + mesh_millis_offset;
     }
 
@@ -77,17 +77,17 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     {
       oldest_node_id = timeDataIncoming.node_id;
 
-      // Add 10ms to account for send time.
-      mesh_millis_offset = timeDataIncoming.time_millis - node_current_millis + 10;
+      // Add 3ms to account for send time.
+      mesh_millis_offset = timeDataIncoming.time_millis - node_current_millis + 3;
 
       mesh_millis = node_current_millis + mesh_millis_offset;
 
       // init is over when we notice that we are not the oldest node.
       post_init = true;
-
-      // we are not the oldest node, set master_node flag to false.
-      master_node = false;
     }
+
+    // we are not the oldest node, set master_node flag to false.
+    master_node = false;
   }
   else
   {
@@ -209,7 +209,7 @@ void loop()
       else if (master_node)
       {
         // if we are the oldest node among all nodes after 60 seconds, high send rate
-        send_interval = random(750, 1250);
+        send_interval = random(2000, 4000);
       }
       else
       {
@@ -221,14 +221,14 @@ void loop()
     {
       if (single_node)
       {
-        // if we are the only node among all nodes in the first 60 seconds after boot, low send rate
-        send_interval = random(8000, 12000);
+        // if we are the only node in the first 60 seconds after boot, high send rate
+        send_interval = random(750, 1250);
       }
 
       else if (master_node)
       {
         // if we are the oldest node among all nodes in the first 60 seconds after boot, high send rate
-        send_interval = random(750, 1250);
+        send_interval = random(2000, 4000);
       }
       else
       {
