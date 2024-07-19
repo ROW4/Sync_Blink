@@ -56,7 +56,7 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
     // if the incoming mesh millis is significantly lower than our current mesh millis
     // let the new node know the current mesh time
 
-    if (mesh_millis - timeDataIncoming.mesh_millis >= 10)
+    if ((mesh_millis - timeDataIncoming.mesh_millis) >= 10)
     {
       // if our offset is zero, we are the oldest node
       if (node_millis_offset == 0)
@@ -68,10 +68,10 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       {
         // we are not the oldest node, but still reply quickly in case no one else does
         // set last_millis_send to now.
-        last_millis_send = node_current_millis; 
+        last_millis_send = node_current_millis;
         // by setting interval to a random number between 10 and 100
-        // any node that could receive the new node will answer within 100ms. 
-        send_interval = random(10, 100);
+        // any node that could receive the new node will answer within 250ms.
+        send_interval = random(10, 250);
       }
     }
     else
@@ -81,7 +81,6 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       // no need to reply immediatly
     }
   }
-
 
   // Serial.print("\treceived_millis: ");
   // Serial.print(timeDataIncoming.mesh_millis);
@@ -136,7 +135,7 @@ void loop()
   node_current_millis = millis();
   mesh_millis = node_current_millis + node_millis_offset;
 
-  if (node_current_millis - last_millis_send >= send_interval)
+  if ((node_current_millis - last_millis_send) >= send_interval)
   {
     last_millis_send = node_current_millis;
 
@@ -144,22 +143,21 @@ void loop()
 
     esp_now_send(sync_blink_mac_address, (uint8_t *)&timeDataOutgoing, sizeof(timeDataOutgoing));
 
-    if(node_millis_offset == 0)
+    if (node_millis_offset == 0)
     {
-      if(node_current_millis < 60000)
+      if (node_current_millis < 60000)
       {
         send_interval = random(200, 300);
       }
       else
       {
-        send_interval = random(800, 1200); 
+        send_interval = random(800, 1200);
       }
     }
     else
     {
       send_interval = random(10000, 12000);
     }
-
   }
 
   if ((mesh_millis % blink_interval) >= (blink_interval * 0.5))
