@@ -2,12 +2,11 @@
 #include <espnow.h>
 #include <ESP8266WiFi.h>
 
-#define BLINKER_PIN 2
+const uint8 BLINKER_PIN = 2;
 
 typedef struct time_struct
 {
-  unsigned long node_id;
-  unsigned long time_millis;
+  unsigned long mesh_millis;
 } time_struct;
 
 time_struct timeDataOutgoing; // Data to be sent
@@ -26,114 +25,64 @@ uint8_t sync_blink_mac_address[] = {0x52, 0x57, 0x73, 0x79, 0x44, 0x45};
 
 unsigned long node_current_millis = 0; // Current millis of this node millis();
 unsigned long mesh_millis = 0;
-unsigned long mesh_millis_offset = 0; // the offset from this node and the oldest node
 unsigned long node_millis_offset = 0;
 
-unsigned long oldest_node_id = 0;
-
 unsigned long last_millis_send = 0;
-
 unsigned long send_interval = 1000;
 
 bool blinker_state = 0;
 int blink_interval = 645; // 1,55 Hz => T= 645 ms
 
-bool master_node = true;
 bool post_init = false;
-bool single_node = true;
 
 // Callback when data is received
 void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
 {
-
   memcpy(&timeDataIncoming, incomingData, sizeof(timeDataIncoming));
 
   node_current_millis = millis();
+  mesh_millis = node_current_millis + node_millis_offset;
 
-  // if received milllis is bigger than our own millis
-  if (timeDataIncoming.time_millis > node_current_millis)
+  // if we receive a mesh millis that is lager than our mesh millis value
+
+  if (timeDataIncoming.mesh_millis > mesh_millis)
   {
-
-    // If it just so happens that the sending node has the same node id, increase our node_id.
-    // By putting this code here, we guarantee, that the older node will not change their node_id.
-    if (timeDataIncoming.node_id == timeDataOutgoing.node_id)
-    {
-      timeDataOutgoing.node_id = timeDataOutgoing.node_id + 1;
-    }
-
-    // if bigger millis are sent from oldest node
-    if (timeDataIncoming.node_id == oldest_node_id)
-    {
-      // re-sync with oldest node to account for drift.
-      // Add 3ms to account for send time.
-      mesh_millis_offset = timeDataIncoming.time_millis - node_current_millis + 3;
-      mesh_millis = node_current_millis + mesh_millis_offset;
-    }
-
-    // if we receive millis from a node that is at least 20 ms larger than our current mesh-millis,
-    // but not from the current oldest node,
-    // sync to the new oldest node.
-    else if (timeDataIncoming.time_millis > (mesh_millis - 20))
-    {
-      oldest_node_id = timeDataIncoming.node_id;
-
-      // Add 3ms to account for send time.
-      mesh_millis_offset = timeDataIncoming.time_millis - node_current_millis + 3;
-
-      mesh_millis = node_current_millis + mesh_millis_offset;
-
-      // init is over when we notice that we are not the oldest node.
-      post_init = true;
-    }
-
-    // we are not the oldest node, set master_node flag to false.
-    master_node = false;
+    // adjust to this new larger mesh millis value
+    node_millis_offset = timeDataIncoming.mesh_millis - node_current_millis;
+    mesh_millis = timeDataIncoming.mesh_millis;
   }
   else
   {
-    // This is executed, if the received millis are less than our own millis.
-    // Check if the timestamp comes from our previous oldest node
-    // If the timestamp comes from the previous oldest node,
-    // the previous node must have been rebooted.
-    // We reset the mesh_millis_offset and oldest_node_id
-    // and assume the we are the oldest node until we notice an older node.
+    // if the incoming mesh millis is significantly lower than our current mesh millis
+    // let the new node know the current mesh time
 
-    if (timeDataIncoming.node_id == oldest_node_id)
+    if (mesh_millis - timeDataIncoming.mesh_millis >= 10)
     {
-      mesh_millis_offset = 0;
-      oldest_node_id = 0;
-      master_node = true;
-
-      // Set send_interval to 0 to send timestamp one single time instantly.
-      send_interval = 0;
-    }
-
-    // if we receive millis that are from a new node that is alive less than 5 seconds
-    // check if we are the master node and send our timestamp one time to update the new node.
-    if (timeDataIncoming.time_millis < 5000)
-    {
-      if (master_node || single_node)
+      // if our offset is zero, we are the oldest node
+      if (node_millis_offset == 0)
       {
-        timeDataOutgoing.time_millis = millis();
+        // reply to the new node with the current time
         esp_now_send(sync_blink_mac_address, (uint8_t *)&timeDataOutgoing, sizeof(timeDataOutgoing));
       }
+      else
+      {
+        // we are not the oldest node, but still reply quickly in case no one else does
+        send_interval = random(10, 100);
+      }
+    }
+    else
+    {
+      // the received mesh millis is only a few milliseconds behind
+      // probably just some delay during sending or receiving
+      // no need to reply immediatly
     }
   }
 
-  // In any case, if we receive any data,
-  // we are not the only node.
-  single_node = false;
 
-  // Serial.print("\nreceived_node-id: ");
-  // Serial.print(timeDataIncoming.node_id);
   // Serial.print("\treceived_millis: ");
-  // Serial.print(timeDataIncoming.time_millis);
-  // Serial.print("\tnode_current_millis: ");
+  // Serial.print(timeDataIncoming.mesh_millis);
+  // Serial.print("\tour mesh_millis: ");
   // Serial.print(node_current_millis);
-  // Serial.print("\tmesh_millis_offset: ");
-  // Serial.print(mesh_millis_offset);
-  // Serial.print("\tmesh_millis_offset: ");
-  // Serial.print(mesh_millis_offset);
 }
 
 void setup()
@@ -160,8 +109,6 @@ void setup()
   // Register for a callback function that will be called when data is received
   esp_now_register_recv_cb(OnDataRecv);
 
-  timeDataOutgoing.node_id = ESP.getChipId();
-
   // Serial.print("[OLD] ESP8266 Board MAC Address:  ");
   // Serial.println(WiFi.macAddress());
 
@@ -183,59 +130,32 @@ void loop()
 {
 
   node_current_millis = millis();
-  mesh_millis = node_current_millis + mesh_millis_offset;
-
-  if (post_init == false && node_current_millis >= 60000)
-  {
-    // set post_init = true after 60 seconds
-    post_init = true;
-  }
+  mesh_millis = node_current_millis + node_millis_offset;
 
   if (node_current_millis - last_millis_send >= send_interval)
   {
     last_millis_send = node_current_millis;
 
-    timeDataOutgoing.time_millis = millis();
+    timeDataOutgoing.mesh_millis = mesh_millis;
 
     esp_now_send(sync_blink_mac_address, (uint8_t *)&timeDataOutgoing, sizeof(timeDataOutgoing));
 
-    if (post_init)
+    if(node_millis_offset == 0)
     {
-      if (single_node)
+      if(node_current_millis < 60000)
       {
-        // if we are the only node after 60 seconds, very low send rate
-        send_interval = random(60000, 90000);
-      }
-      else if (master_node)
-      {
-        // if we are the oldest node among all nodes after 60 seconds, high send rate
-        send_interval = random(2000, 4000);
+        send_interval = 250;
       }
       else
       {
-        // we are not the only and not the oldest node, very low send rate
-        send_interval = random(60000, 90000);
+        send_interval = 1000; 
       }
     }
     else
     {
-      if (single_node)
-      {
-        // if we are the only node in the first 60 seconds after boot, high send rate
-        send_interval = random(750, 1250);
-      }
-
-      else if (master_node)
-      {
-        // if we are the oldest node among all nodes in the first 60 seconds after boot, high send rate
-        send_interval = random(2000, 4000);
-      }
-      else
-      {
-        // we are not the oldest and not the only node within the 60 seconds, very low send rate
-        send_interval = random(60000, 90000);
-      }
+      send_interval = 10000;
     }
+
   }
 
   if ((mesh_millis % blink_interval) >= (blink_interval * 0.5))
