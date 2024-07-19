@@ -144,16 +144,16 @@ void loop()
     {
       if(node_current_millis < 60000)
       {
-        send_interval = 250;
+        send_interval = random(200, 300);
       }
       else
       {
-        send_interval = 1000; 
+        send_interval = random(800, 1200); 
       }
     }
     else
     {
-      send_interval = 10000;
+      send_interval = random(10000, 12000);
     }
 
   }
