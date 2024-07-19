@@ -30,24 +30,23 @@ Broadcast messages are then sent to all ESP8266 devices simultaneously.
 
 ### Broadcast Message Contents
 
-The broadcast message includes crucial information for node identification and synchronization. 
-It contains a unique node ID derived from the hardware MAC address of each ESP8266 node. 
-Additionally, the message includes a timestamp representing the time each node processed the message. 
-This timestamp is based on the value obtained from the `millis()` function, providing a time reference for synchronization.
+The broadcast message includes a timestamp representing the mesh time. 
+This timestamp is based on the value obtained from the `millis()` function and the mesh offset of each individual node, providing a time reference for synchronization.
 
 ### Achieving Multi-Node Communication
 
 With this foundation, multiple ESP8266 nodes can effectively communicate with each other through broadcast messages. 
-The combination of a shared MAC address and individual node IDs ensures that broadcast messages are comprehensively received and processed by all nodes in the network. 
+The use of a shared MAC address ensures that broadcast messages are comprehensively received and processed by all nodes in the network. 
 This approach facilitates synchronized communication between multiple ESP8266 devices within the network.
 
 ### Node Pairing and Synchronization
 
-The pairing or synchronization of all nodes typically occurs within a few seconds. 
-The master node is determined by the node that has been operational the longest. 
-The "age" of a node corresponds to the `millis()` command.
-A newly powered-on node is considered very young and possesses a smaller millis value. 
-When a new, young node receives a message from an older node, it automatically synchronizes with the oldest node in the network.
+The pairing or synchronization of all nodes typically occurs within a second. 
+The mesh time starts when the first node is powered on. 
+Every other node that is powered on after the first node, receives the mesh millis from the older node. 
+It calculates the offset is has to the mesh millis and uses it to synchronize the mesh time. 
+Every node then also sends out its mesh time, which is equal to the mesh millis since the first node was powered on. 
+If the initial first powered on node is turned off and on again, it will receive the mesh time from any other node. 
 
 ### Vehicle Compatibility and Plug-and-Play Option
 
