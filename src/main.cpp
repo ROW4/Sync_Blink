@@ -67,6 +67,10 @@ void OnDataRecv(uint8_t *mac, uint8_t *incomingData, uint8_t len)
       else
       {
         // we are not the oldest node, but still reply quickly in case no one else does
+        // set last_millis_send to now.
+        last_millis_send = node_current_millis; 
+        // by setting interval to a random number between 10 and 100
+        // any node that could receive the new node will answer within 100ms. 
         send_interval = random(10, 100);
       }
     }
